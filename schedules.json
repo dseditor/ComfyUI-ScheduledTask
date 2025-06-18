@@ -1,0 +1,11 @@
+{
+  "schedules": [
+    {
+      "time": "21:36",
+      "workflow": "Exmaple.json",
+      "enabled": true
+    }
+  ],
+  "globalEnabled": true,
+  "updated_at": "2025-06-18T23:38:59.162559"
+}

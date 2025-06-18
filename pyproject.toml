@@ -1,0 +1,16 @@
+[project]
+name = "ScheduledTask"
+description = "A powerful workflow scheduling extension for ComfyUI that enables automated daily execution of workflows with an intuitive web interface."
+version = "1.0.0"
+license = {file = "LICENSE"}
+dependencies = ["schedule"]
+
+[project.urls]
+Repository = "https://github.com/dseditor/ComfyUI-ScheduledTask"
+#  Used by Comfy Registry https://registry.comfy.org
+
+[tool.comfy]
+PublisherId = "dseditor"
+DisplayName = "ComfyUI-ScheduledTask"
+Icon = ""
+includes = []
