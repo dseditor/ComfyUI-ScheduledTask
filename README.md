@@ -20,7 +20,7 @@ A powerful workflow scheduling extension for ComfyUI that enables automated dail
 
 ## 🚀 Installation 安裝方式
 
-### Method 1: ComfyUI Manager (Recommended/Will be work later)
+### Method 1: ComfyUI Manager (Recommended)
 ### 方法 1：ComfyUI 管理器（推薦/稍後可用）
 1. Open ComfyUI Manager 開啟 ComfyUI 管理器
 2. Search for "ComfyUI-ScheduledTask" 搜尋 "ComfyUI-ScheduledTask"
@@ -96,12 +96,14 @@ The extension adds a "Task" section to ComfyUI's settings page with the followin
 
 ### TimeToSeedList Node 時間隨機種子列表節點
 
+![Demo](readme/demo2.jpg)
+
 A special utility node that generates time-based random seeds:
 
 一個特殊的實用節點，產生基於時間的隨機種子：
 
 **Inputs 輸入:**
-- `count` (INT): Number of random seeds to generate (1-100) 要產生的隨機種子數量（1-100）
+- `count` (INT): Number of random seeds to generate (1-10000) 要產生的隨機種子數量（1-10000）
 
 **Outputs 輸出:**
 - `seed_list` (INT List): List of random integers based on current time 基於當前時間的隨機整數列表
@@ -110,6 +112,7 @@ A special utility node that generates time-based random seeds:
 - Perfect for creating varied outputs in scheduled workflows 非常適合在排程工作流程中創建多樣化輸出
 - Seeds change automatically based on execution time 種子根據執行時間自動變化
 - Ensures different results for each scheduled run 確保每次排程運行都有不同結果
+- Setting this for create large image list and run  在設定時間內進行大規模隨機排程
 
 ### File Structure 檔案結構
 
