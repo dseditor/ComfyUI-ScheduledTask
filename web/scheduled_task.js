@@ -5,6 +5,42 @@ let schedules = [];
 let workflows = [];
 let settingsContainer = null;
 
+// Detect if we're in dark mode
+function isDarkMode() {
+    // Check ComfyUI's theme
+    const body = document.body;
+    const computedStyle = getComputedStyle(body);
+    const bgColor = computedStyle.backgroundColor;
+    
+    // If background is dark, we're in dark mode
+    if (bgColor) {
+        const rgb = bgColor.match(/\d+/g);
+        if (rgb && rgb.length >= 3) {
+            const brightness = (parseInt(rgb[0]) * 299 + parseInt(rgb[1]) * 587 + parseInt(rgb[2]) * 114) / 1000;
+            return brightness < 128;
+        }
+    }
+    
+    // Fallback: check for dark class or default to false
+    return body.classList.contains('dark') || body.classList.contains('dark-theme');
+}
+
+// Get theme colors
+function getThemeColors() {
+    const darkMode = isDarkMode();
+    
+    return {
+        background: darkMode ? '#2b2b2b' : '#ffffff',
+        surface: darkMode ? '#383838' : '#fafafa',
+        border: darkMode ? '#555555' : '#e0e0e0',
+        text: darkMode ? '#ffffff' : '#333333',
+        textSecondary: darkMode ? '#cccccc' : '#666666',
+        input: darkMode ? '#404040' : '#ffffff',
+        inputBorder: darkMode ? '#666666' : '#cccccc',
+        overlay: darkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.7)'
+    };
+}
+
 // Save workflow as task
 async function saveWorkflowAsTask() {
     try {
@@ -106,6 +142,8 @@ function cleanWorkflowToAPI(workflow) {
 // Show naming dialog
 function showNamingDialog() {
     return new Promise((resolve) => {
+        const colors = getThemeColors();
+        
         // Create overlay
         const overlay = document.createElement('div');
         overlay.style.cssText = `
@@ -114,7 +152,7 @@ function showNamingDialog() {
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: ${colors.overlay};
             z-index: 10000;
             display: flex;
             justify-content: center;
@@ -124,17 +162,19 @@ function showNamingDialog() {
         // Create dialog
         const dialog = document.createElement('div');
         dialog.style.cssText = `
-            background: white;
+            background: ${colors.background};
+            color: ${colors.text};
             border-radius: 8px;
             padding: 25px;
             min-width: 400px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid ${colors.border};
         `;
 
         // Title
         const title = document.createElement('h3');
         title.textContent = '💾 Save Workflow as Task';
-        title.style.cssText = 'margin: 0 0 20px 0; color: #333; text-align: center;';
+        title.style.cssText = `margin: 0 0 20px 0; color: ${colors.text}; text-align: center;`;
 
         // Input container
         const inputContainer = document.createElement('div');
@@ -142,7 +182,7 @@ function showNamingDialog() {
 
         const label = document.createElement('label');
         label.textContent = 'Workflow Name:';
-        label.style.cssText = 'display: block; margin-bottom: 8px; font-weight: bold; color: #333;';
+        label.style.cssText = `display: block; margin-bottom: 8px; font-weight: bold; color: ${colors.text};`;
 
         const input = document.createElement('input');
         input.type = 'text';
@@ -150,10 +190,12 @@ function showNamingDialog() {
         input.style.cssText = `
             width: 100%;
             padding: 10px;
-            border: 2px solid #ddd;
+            border: 2px solid ${colors.inputBorder};
             border-radius: 4px;
             font-size: 14px;
             box-sizing: border-box;
+            background: ${colors.input};
+            color: ${colors.text};
         `;
 
         // Auto-generate name based on current time
@@ -439,6 +481,8 @@ function showNotification(message, type = "info") {
 
 // Create schedule settings interface
 async function createScheduleSettings() {
+    const colors = getThemeColors();
+    
     // Load data
     try {
         const [loadedSchedules, loadedWorkflows] = await Promise.all([
@@ -468,9 +512,10 @@ async function createScheduleSettings() {
     const container = document.createElement('div');
     container.style.cssText = `
         padding: 15px;
-        border: 2px solid #e0e0e0;
+        border: 2px solid ${colors.border};
         border-radius: 8px;
-        background: #fafafa;
+        background: ${colors.surface};
+        color: ${colors.text};
         margin: 8px 0;
         max-width: 100%;
     `;
@@ -478,7 +523,7 @@ async function createScheduleSettings() {
     // Description
     const description = document.createElement('div');
     description.innerHTML = `
-        <div style="margin-bottom: 15px; padding: 10px; background: #e8f4fd; border-left: 4px solid #2196F3; border-radius: 4px; font-size: 12px;">
+        <div style="margin-bottom: 15px; padding: 10px; background: ${isDarkMode() ? '#1a3a4a' : '#e8f4fd'}; border-left: 4px solid #2196F3; border-radius: 4px; font-size: 12px; color: ${colors.text};">
             <strong>💡 Info:</strong> Workflow API files should be placed in <strong>ComfyUI-ScheduledTask/Workflow/</strong> folder.
         </div>
     `;
@@ -490,15 +535,16 @@ async function createScheduleSettings() {
         align-items: center;
         margin-bottom: 15px;
         padding: 12px;
-        background: white;
+        background: ${colors.background};
         border: 2px solid #4CAF50;
         border-radius: 6px;
         gap: 10px;
+        color: ${colors.text};
     `;
     
     const globalLabel = document.createElement('label');
     globalLabel.innerHTML = '<strong>🔧 Enable Scheduler</strong>';
-    globalLabel.style.cssText = 'font-size: 13px; color: #333;';
+    globalLabel.style.cssText = `font-size: 13px; color: ${colors.text};`;
     
     const globalSwitch = document.createElement('input');
     globalSwitch.type = 'checkbox';
@@ -546,7 +592,7 @@ async function createScheduleSettings() {
     if (workflows.length === 0) {
         const warning = document.createElement('div');
         warning.innerHTML = `
-            <div style="padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; margin-bottom: 12px; font-size: 12px;">
+            <div style="padding: 10px; background: ${isDarkMode() ? '#4a3c1a' : '#fff3cd'}; border: 1px solid ${isDarkMode() ? '#665a2a' : '#ffeaa7'}; border-radius: 4px; margin-bottom: 12px; font-size: 12px; color: ${colors.text};">
                 <strong>⚠️ Warning:</strong> No workflow files found! Please place workflow API-JSON files in <code>ComfyUI-ScheduledTask/Workflow/</code> folder or rightclick save as task. 
             </div>
         `;
@@ -559,7 +605,7 @@ async function createScheduleSettings() {
         display: flex;
         gap: 8px;
         justify-content: flex-end;
-        border-top: 1px solid #ddd;
+        border-top: 1px solid ${colors.border};
         padding-top: 12px;
     `;
     
@@ -625,17 +671,22 @@ async function createScheduleSettings() {
 
 // Create single schedule setting row
 function createScheduleRow(schedule, index) {
+    const colors = getThemeColors();
+    
     const row = document.createElement('div');
     row.style.cssText = `
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
         margin-bottom: 8px;
-        padding: 10px;
-        border: 1px solid #ddd;
+        padding: 12px;
+        border: 1px solid ${colors.border};
         border-radius: 4px;
-        background: white;
+        background: ${colors.background};
+        color: ${colors.text};
         font-size: 12px;
+        flex-wrap: wrap;
+        min-height: 60px;
     `;
     
     // Index
@@ -654,16 +705,16 @@ function createScheduleRow(schedule, index) {
     
     // Enable switch
     const enabledContainer = document.createElement('div');
-    enabledContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 2px;';
+    enabledContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 60px;';
     
     const enabledLabel = document.createElement('label');
     enabledLabel.textContent = 'Enable';
-    enabledLabel.style.cssText = 'font-size: 10px; color: #666;';
+    enabledLabel.style.cssText = `font-size: 10px; color: ${colors.textSecondary};`;
     
     const enabledSwitch = document.createElement('input');
     enabledSwitch.type = 'checkbox';
     enabledSwitch.checked = schedule.enabled || false;
-    enabledSwitch.style.cssText = 'width: 13px; height: 13px; cursor: pointer;';
+    enabledSwitch.style.cssText = 'width: 16px; height: 16px; cursor: pointer;';
     
     enabledSwitch.onchange = (e) => {
         schedule.enabled = e.target.checked;
@@ -672,7 +723,7 @@ function createScheduleRow(schedule, index) {
     
     function updateRowStyle() {
         row.style.opacity = schedule.enabled ? '1' : '0.6';
-        row.style.background = schedule.enabled ? 'white' : '#f9f9f9';
+        row.style.background = schedule.enabled ? colors.background : colors.surface;
     }
     
     enabledContainer.appendChild(enabledLabel);
@@ -680,21 +731,25 @@ function createScheduleRow(schedule, index) {
     
     // Time input
     const timeContainer = document.createElement('div');
-    timeContainer.style.cssText = 'display: flex; flex-direction: column; gap: 2px;';
+    timeContainer.style.cssText = 'display: flex; flex-direction: column; gap: 2px; min-width: 110px;';
     
     const timeLabel = document.createElement('label');
     timeLabel.textContent = 'Time';
-    timeLabel.style.cssText = 'font-size: 10px; color: #666; font-weight: bold;';
+    timeLabel.style.cssText = `font-size: 10px; color: ${colors.textSecondary}; font-weight: bold;`;
     
     const timeInput = document.createElement('input');
     timeInput.type = 'time';
     timeInput.value = schedule.time || '';
     timeInput.style.cssText = `
-        padding: 4px;
-        border: 1px solid #ccc;
+        padding: 6px 8px;
+        border: 1px solid ${colors.inputBorder};
         border-radius: 3px;
-        font-size: 11px;
-        width: 80px;
+        font-size: 12px;
+        width: 100%;
+        min-width: 100px;
+        background: ${colors.input};
+        color: ${colors.text};
+        box-sizing: border-box;
     `;
     
     timeInput.onchange = (e) => {
@@ -706,20 +761,22 @@ function createScheduleRow(schedule, index) {
     
     // Workflow selection
     const workflowContainer = document.createElement('div');
-    workflowContainer.style.cssText = 'display: flex; flex-direction: column; gap: 2px; flex-grow: 1;';
+    workflowContainer.style.cssText = 'display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 200px;';
     
     const workflowLabel = document.createElement('label');
     workflowLabel.textContent = 'Workflow File';
-    workflowLabel.style.cssText = 'font-size: 10px; color: #666; font-weight: bold;';
+    workflowLabel.style.cssText = `font-size: 10px; color: ${colors.textSecondary}; font-weight: bold;`;
     
     const workflowSelect = document.createElement('select');
     workflowSelect.style.cssText = `
-        padding: 4px;
-        border: 1px solid #ccc;
+        padding: 6px 8px;
+        border: 1px solid ${colors.inputBorder};
         border-radius: 3px;
-        font-size: 11px;
-        background: white;
+        font-size: 12px;
+        background: ${colors.input};
+        color: ${colors.text};
         width: 100%;
+        box-sizing: border-box;
     `;
     
     // Add options
@@ -755,8 +812,13 @@ function createScheduleRow(schedule, index) {
         border: none;
         border-radius: 3px;
         cursor: pointer;
-        padding: 4px 6px;
-        font-size: 10px;
+        padding: 8px 10px;
+        font-size: 12px;
+        min-width: 40px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     `;
     
     deleteButton.onclick = () => {
@@ -817,7 +879,15 @@ waitForComfyUI().then(() => {
                     if (!settingsContainer) {
                         // Create loading container
                         settingsContainer = document.createElement('div');
-                        settingsContainer.innerHTML = '<div style="padding: 15px; text-align: center; font-size: 12px;">Loading schedule settings...</div>';
+                        const colors = getThemeColors();
+                        settingsContainer.style.cssText = `
+                            padding: 15px; 
+                            text-align: center; 
+                            font-size: 12px; 
+                            color: ${colors.text};
+                            background: ${colors.surface};
+                        `;
+                        settingsContainer.textContent = 'Loading schedule settings...';
                         
                         // Load actual content asynchronously
                         createScheduleSettings().then(content => {
@@ -826,7 +896,8 @@ waitForComfyUI().then(() => {
                             console.log("✅ Schedule settings interface loaded successfully");
                         }).catch(error => {
                             console.error("❌ Failed to load schedule settings interface:", error);
-                            settingsContainer.innerHTML = `<div style="padding: 15px; color: red; font-size: 12px;">Loading failed: ${error.message}</div>`;
+                            const colors = getThemeColors();
+                            settingsContainer.innerHTML = `<div style="padding: 15px; color: #f44336; font-size: 12px; background: ${colors.surface};">Loading failed: ${error.message}</div>`;
                         });
                     }
                     return settingsContainer;

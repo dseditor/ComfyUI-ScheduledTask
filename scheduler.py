@@ -27,9 +27,9 @@ class TimeToSeedList:
         return {
             "required": {
                 "count": ("INT", {
-                    "default": 7,
+                    "default": 1,
                     "min": 1,
-                    "max": 100,
+                    "max": 100000,
                     "step": 1,
                     "display": "number"
                 }),

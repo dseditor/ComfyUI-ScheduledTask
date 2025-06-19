@@ -1,6 +1,8 @@
 # ComfyUI-ScheduledTask
 # ComfyUI 定時任務擴展
 
+![Demo](readme/demo.jpg)
+
 A powerful workflow scheduling extension for ComfyUI that enables automated daily execution of workflows with an intuitive web interface.
 
 一個強大的 ComfyUI 工作流程排程擴展，支援自動化每日執行工作流程，並提供直觀的網頁介面。
