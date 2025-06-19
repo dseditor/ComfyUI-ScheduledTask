@@ -1,7 +1,7 @@
 [project]
 name = "scheduledtask"
 description = "A powerful workflow scheduling extension for ComfyUI that enables automated daily execution of workflows with an intuitive web interface."
-version = "1.0.0"
+version = "1.0.1"
 license = {file = "LICENSE"}
 dependencies = ["schedule>=1.2.0", "requests>=2.25.0"]
 
