@@ -21,7 +21,7 @@ A powerful workflow scheduling extension for ComfyUI that enables automated dail
 ## 🚀 Installation 安裝方式
 
 ### Method 1: ComfyUI Manager (Recommended)
-### 方法 1：ComfyUI 管理器（推薦/稍後可用）
+### 方法 1：ComfyUI 管理器（推薦）
 1. Open ComfyUI Manager 開啟 ComfyUI 管理器
 2. Search for "ComfyUI-ScheduledTask" 搜尋 "ComfyUI-ScheduledTask"
 3. Click Install 點擊安裝
@@ -114,6 +114,65 @@ A special utility node that generates time-based random seeds:
 - Ensures different results for each scheduled run 確保每次排程運行都有不同結果
 - Setting this for create large image list and run  在設定時間內進行大規模隨機排程
 
+### Daily Prompt Scheduler Node / 每日提示詞排程節點
+
+![Demo](readme/demo3.jpg)
+
+A ComfyUI node that provides time-based prompt management with daily rotation capabilities.
+提供基於時間的提示詞管理和每日輪換功能。
+
+####Features / 功能特色
+
+- **Daily Rotation / 每日輪換**: Automatically selects different prompts each day / 每天自動選擇不同的提示詞
+- **Two Operation Modes / 兩種運作模式**:
+  - **Scheduled Mode / 排程模式**: Sequential selection with time seed (predictable daily progression) / 使用時間種子的順序選擇（可預測的每日進展）
+  - **Random Mode / 隨機模式**: Random selection with daily seed (random but consistent per day) / 使用每日種子的隨機選擇（隨機但每天一致）
+- **File-based Management / 檔案管理**: Load prompts from text files in the `Prompt` folder / 從Prompt資料夾中的文字檔載入提示詞
+- **Individual Time Seeds / 獨立時間種子**: Each text file maintains its own scheduling timeline / 每個文字檔維護自己的排程時間線
+- **List Output / 列表輸出**: Returns prompts as a connectable string list for workflow integration / 返回可連接的字串列表用於工作流程整合
+- **Loop Integration / 迴圈整合**: Provides count output for easy loop control / 提供計數輸出便於迴圈控制
+
+#### Setup / 設置
+
+1. Visit`Prompt` folder in your node directory: `/ComfyUI-ScheduledTask/Prompt/` / 在節點目錄中訪問`Prompt`資料夾：`/ComfyUI-ScheduledTask/Prompt/`
+2. Place your text files (`.txt`) in this folder / 將文字檔（`.txt`）放置在此資料夾中
+3. Each line in the text file represents one prompt (empty lines are ignored) / 文字檔中每一行代表一個提示詞（空行會被忽略）
+
+#### Inputs / 輸入參數
+
+- **txt_file / 文字檔**: Dropdown selection of available text files in the Prompt folder / 下拉選單選擇Prompt資料夾中的可用文字檔
+- **daily_count / 每日數量**: Number of prompts to select each day (1-5000) / 每天選擇的提示詞數量（1-5000）
+- **scheduled / 排程**: Toggle between Scheduled and Random modes (Default is Random Mode)/ 在排程模式和隨機模式之間切換，預設為隨機模式，每天隨機抽選提示組數
+
+#### Outputs / 輸出參數
+
+- **daily_prompts / 每日提示詞**: List of selected prompts (STRING list, connectable to other nodes) / 選中的提示詞列表（字串列表，可連接到其他節點）
+- **total_index / 總數索引**: Number of prompts actually returned (INT, useful for loop control) / 實際返回的提示詞數量（整數，用於迴圈控制）
+
+#### Operation Modes / 運作模式
+
+#### Scheduled Mode / 排程模式
+- **First Run / 首次運行**: Creates a time seed based on current date / 基於當前日期創建時間種子
+- **Daily Progression / 每日進展**: Selects prompts sequentially / 按順序選擇提示詞
+- **Example / 範例**: With 12 prompts, selecting 3 per day / 有12個提示詞，每天選擇3個：
+  - Day 1 / 第1天: Prompts 1, 2, 3 / 提示詞1, 2, 3
+  - Day 2 / 第2天: Prompts 4, 5, 6 / 提示詞4, 5, 6
+  - Day 3 / 第3天: Prompts 7, 8, 9 / 提示詞7, 8, 9
+  - Day 4 / 第4天: Prompts 10, 11, 12 / 提示詞10, 11, 12
+  - Day 5 / 第5天: Prompts 1, 2, 3 (cycles back) / 提示詞1, 2, 3（循環回到開頭）
+
+#### Random Mode / 隨機模式
+- **Daily Random / 每日隨機**: Uses date-based seed for random selection / 使用基於日期的種子進行隨機選擇
+- **Consistent / 一致性**: Same random selection throughout the day / 整天保持相同的隨機選擇
+- **Example / 範例**: Random but fixed selection per day (e.g., prompts 3, 7, 11) / 每天隨機但固定的選擇（例如：提示詞3, 7, 11）
+
+#### File Management / 檔案管理
+
+- **Multiple Files / 多檔案**: Each `.txt` file has independent scheduling / 每個`.txt`檔案都有獨立的排程
+- **Time Seeds / 時間種子**: Stored as `{filename}_time_seed.json` in the Prompt folder(If Scheduled) / 以`{檔名}_time_seed.json`的形式儲存在Prompt資料夾中，假使是使用排程模式
+- **Auto-wrapping / 自動循環**: Never causes index errors, automatically wraps around (With Time Seed) / 永不會造成索引錯誤，自動循環，但可能會因此採樣到相同的圖片，請配合時間種子使用
+- **UTF-8 Support / UTF-8支援**: Handles international characters and languages / 支援國際字符和多種語言
+
 ### File Structure 檔案結構
 
 ```
@@ -121,12 +180,15 @@ ComfyUI-ScheduledTask/
 ├── __init__.py              # Extension entry point 擴展入口點
 ├── scheduler.py             # Core scheduling logic & TimeToSeedList node 核心排程邏輯和時間種子節點
 ├── web_handler.py           # API endpoints API 端點
+├── Prompt/                  # 提示詞檔案庫
+│   ├── Example.txt          # 範例檔案
 ├── web/
 │   └── scheduled_task.js    # Frontend interface 前端介面
 ├── Workflow/                # Saved workflow files (auto-created) 保存的工作流程檔案（自動創建）
 │   ├── workflow1.json
 │   └── workflow2.json
 └── schedules.json           # Schedule configuration (auto-created) 排程配置（自動創建）
+
 ```
 ### Workflow Format 工作流程格式
 Saved workflows are stored in ComfyUI API format:

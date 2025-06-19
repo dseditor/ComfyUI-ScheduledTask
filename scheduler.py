@@ -14,6 +14,184 @@ import random
 from datetime import datetime
 import hashlib
 
+class DailyPromptScheduler:
+    def __init__(self):
+        self.node_dir = os.path.dirname(os.path.abspath(__file__))
+        self.prompt_dir = os.path.join(self.node_dir, "Prompt")
+        
+        # Ensure Prompt folder exists
+        if not os.path.exists(self.prompt_dir):
+            os.makedirs(self.prompt_dir)
+            
+    def get_txt_files(self):
+        """Get all txt files in the Prompt folder"""
+        if not os.path.exists(self.prompt_dir):
+            return ["Please place txt files in Prompt folder"]
+        
+        # Only get .txt files, exclude .json files
+        txt_files = [f for f in os.listdir(self.prompt_dir) 
+                    if f.endswith('.txt') and not f.endswith('_time_seed.json')]
+        if not txt_files:
+            return ["Please place txt files in Prompt folder"]
+        
+        return txt_files
+    
+    def get_seed_file_path(self, txt_filename):
+        """Get the seed file path for specific txt file"""
+        # Remove .txt extension and add _time_seed.json
+        base_name = os.path.splitext(txt_filename)[0]
+        seed_filename = f"{base_name}_time_seed.json"
+        return os.path.join(self.prompt_dir, seed_filename)
+    
+    def load_time_seed(self, txt_filename):
+        """Load time seed for specific txt file"""
+        seed_file = self.get_seed_file_path(txt_filename)
+        if os.path.exists(seed_file):
+            try:
+                with open(seed_file, 'r', encoding='utf-8') as f:
+                    seed_data = json.load(f)
+                    return seed_data.get('seed_date', None)
+            except:
+                return None
+        return None
+    
+    def save_time_seed(self, txt_filename, seed_date):
+        """Save time seed for specific txt file"""
+        seed_file = self.get_seed_file_path(txt_filename)
+        seed_data = {'seed_date': seed_date}
+        with open(seed_file, 'w', encoding='utf-8') as f:
+            json.dump(seed_data, f, ensure_ascii=False)
+    
+    @classmethod
+    def INPUT_TYPES(cls):
+        instance = cls()
+        txt_files = instance.get_txt_files()
+        
+        return {
+            "required": {
+                "txt_file": (txt_files, {"default": txt_files[0] if txt_files else ""}),
+                "daily_count": ("INT", {
+                    "default": 3,
+                    "min": 1,
+                    "max": 5000,
+                    "step": 1
+                }),
+                "scheduled": ("BOOLEAN", {
+                    "default": False,
+                    "label_on": "Set Time Seed",
+                    "label_off": "Random Mode"
+                }),
+            }
+        }
+    
+    RETURN_TYPES = ("STRING", "INT")
+    RETURN_NAMES = ("daily_prompts", "total_index")
+    OUTPUT_IS_LIST = (True, False)
+    FUNCTION = "get_daily_prompts"
+    CATEGORY = "text/scheduled"
+    
+    def IS_CHANGED(self, txt_file, daily_count, scheduled):
+        """Ensure node is not cached"""
+        current_time = datetime.now()
+        current_date = current_time.strftime("%Y%m%d")
+        
+        # If file doesn't exist, return current timestamp
+        txt_path = os.path.join(self.prompt_dir, txt_file)
+        if not os.path.exists(txt_path):
+            return str(current_time.timestamp())
+        
+        # Combine file modification time, current date and settings to generate identifier
+        try:
+            file_mtime = os.path.getmtime(txt_path)
+            unique_id = f"{file_mtime}_{current_date}_{daily_count}_{scheduled}_{txt_file}"
+            return hashlib.md5(unique_id.encode()).hexdigest()
+        except:
+            return str(current_time.timestamp())
+    
+    def read_txt_file(self, filename):
+        """Read and parse txt file"""
+        txt_path = os.path.join(self.prompt_dir, filename)
+        
+        if not os.path.exists(txt_path):
+            return []
+        
+        try:
+            with open(txt_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Split by newlines, filter empty lines
+            lines = [line.strip() for line in content.split('\n') if line.strip()]
+            return lines
+        except Exception as e:
+            logger.error(f"Error reading file: {e}")
+            return []
+    
+    def get_daily_prompts(self, txt_file, daily_count, scheduled):
+        # Check if file exists
+        if txt_file == "Please place txt files in Prompt folder":
+            return (["Error: Please place txt files in Prompt folder"], 0)
+        
+        # Read prompt list
+        all_prompts = self.read_txt_file(txt_file)
+        
+        if not all_prompts:
+            error_msg = f"Error: Unable to read file {txt_file} or file is empty"
+            return ([error_msg], 0)
+        
+        current_time = datetime.now()
+        current_date = current_time.strftime("%Y%m%d")
+        
+        # Ensure not exceeding available prompts count
+        actual_count = min(daily_count, len(all_prompts))
+        
+        # Handle scheduling logic
+        if scheduled:
+            # Scheduled mode with time seed
+            seed_date = self.load_time_seed(txt_file)
+            
+            if seed_date is None:
+                # First time setting seed
+                self.save_time_seed(txt_file, current_date)
+                seed_date = current_date
+                status = f"Time seed set: {seed_date} for {txt_file}"
+            else:
+                status = f"Using time seed: {seed_date} for {txt_file}"
+            
+            # Calculate days difference from seed date
+            try:
+                seed_datetime = datetime.strptime(seed_date, "%Y%m%d")
+                current_datetime = datetime.strptime(current_date, "%Y%m%d")
+                days_diff = (current_datetime - seed_datetime).days
+            except:
+                days_diff = 0
+            
+            # Calculate starting index for sequential selection
+            total_prompts = len(all_prompts)
+            start_index = (days_diff * actual_count) % total_prompts
+            
+            # Sequential selection with wrapping
+            selected_prompts = []
+            for i in range(actual_count):
+                index = (start_index + i) % total_prompts
+                selected_prompts.append(all_prompts[index])
+            
+        else:
+            # Random mode: use different random seed each day
+            random_seed = int(current_date) + hash(txt_file)
+            random.seed(random_seed)
+            status = f"Random mode - Date seed: {current_date} for {txt_file}"
+            
+            # Randomly select prompts without replacement
+            selected_prompts = random.sample(all_prompts, actual_count)
+        
+        # Output debug information
+        logger.info(f"DailyPromptScheduler: {status}")
+        logger.info(f"DailyPromptScheduler: Selected {actual_count} from {len(all_prompts)} prompts")
+        logger.info(f"DailyPromptScheduler: Selected prompts: {selected_prompts}")
+        
+        return (selected_prompts, actual_count)
+
+
 class TimeToSeedList:
     """
     Generate random seed list based on current time
