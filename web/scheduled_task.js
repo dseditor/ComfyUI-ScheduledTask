@@ -814,8 +814,8 @@ function createScheduleRow(schedule, index) {
         cursor: pointer;
         padding: 8px 10px;
         font-size: 12px;
-        min-width: 40px;
-        height: 36px;
+        min-width: 30px;
+        height: 30px;
         display: flex;
         align-items: center;
         justify-content: center;

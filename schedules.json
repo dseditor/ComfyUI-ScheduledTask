@@ -2,10 +2,10 @@
   "schedules": [
     {
       "time": "23:22",
-      "workflow": "ExmapleDailyPrompt.json",
+      "workflow": "Exmaple.json",
       "enabled": true
     }
   ],
   "globalEnabled": true,
-  "updated_at": "2025-06-20T23:20:23.382801"
+  "updated_at": "2025-06-19T23:57:39.192086"
 }
