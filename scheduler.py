@@ -5,6 +5,8 @@ import time
 import threading
 import requests
 import logging
+import subprocess
+import platform
 from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
@@ -13,6 +15,12 @@ logger = logging.getLogger(__name__)
 import random
 from datetime import datetime
 import hashlib
+
+class AnyType(str):
+    def __ne__(self, __value: object) -> bool:
+        return False
+
+any_typ = AnyType("*")
 
 class DailyPromptScheduler:
     def __init__(self):
@@ -269,6 +277,93 @@ class TimeToSeedList:
             logger.error(f"TimeToSeedList generation failed: {e}")
             # Return default value
             return ([42] * count,)
+
+class ShutdownNode:
+    """
+    Shutdown node - shuts down computer when workflow completes
+    """
+    
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "trigger": (any_typ, {"forceInput": True}),
+                "delay_seconds": ("INT", {
+                    "default": 5,
+                    "min": 0,
+                    "max": 300,
+                    "step": 1,
+                    "display": "number"
+                }),
+                "force_shutdown": ("BOOLEAN", {
+                    "default": False,
+                    "label_on": "Force Shutdown",
+                    "label_off": "Normal Shutdown"
+                }),
+            }
+        }
+    
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("status",)
+    FUNCTION = "shutdown_computer"
+    CATEGORY = "system/shutdown"
+    
+    def shutdown_computer(self, trigger, delay_seconds, force_shutdown):
+        """
+        Shutdown computer with specified delay
+        
+        Args:
+            trigger: Any input to trigger shutdown (can be any type)
+            delay_seconds (int): Delay before shutdown in seconds
+            force_shutdown (bool): Whether to force shutdown without saving
+            
+        Returns:
+            tuple: Status message
+        """
+        try:
+            system = platform.system().lower()
+            
+            if delay_seconds > 0:
+                logger.info(f"Shutdown scheduled in {delay_seconds} seconds...")
+                time.sleep(delay_seconds)
+            
+            if system == "windows":
+                # Windows shutdown command
+                if force_shutdown:
+                    cmd = ["shutdown", "/s", "/f", "/t", "0"]
+                else:
+                    cmd = ["shutdown", "/s", "/t", "0"]
+                
+                logger.info("Executing Windows shutdown command...")
+                subprocess.run(cmd, check=True)
+                
+            elif system == "linux" or system == "darwin":  # Linux or macOS
+                # Unix-like systems shutdown command
+                if force_shutdown:
+                    cmd = ["sudo", "shutdown", "-h", "now"]
+                else:
+                    cmd = ["shutdown", "-h", "now"]
+                
+                logger.info("Executing Unix shutdown command...")
+                subprocess.run(cmd, check=True)
+                
+            else:
+                error_msg = f"Unsupported operating system: {system}"
+                logger.error(error_msg)
+                return (error_msg,)
+            
+            success_msg = f"Shutdown command executed successfully (System: {system}, Delay: {delay_seconds}s, Force: {force_shutdown})"
+            logger.info(success_msg)
+            return (success_msg,)
+            
+        except subprocess.CalledProcessError as e:
+            error_msg = f"Shutdown command failed: {e}"
+            logger.error(error_msg)
+            return (error_msg,)
+        except Exception as e:
+            error_msg = f"Unexpected error during shutdown: {e}"
+            logger.error(error_msg)
+            return (error_msg,)
 
 class SchedulerManager:
     def __init__(self):

@@ -9,7 +9,7 @@ import time
 import atexit
 
 # 匯入節點類別和排程管理器
-from .scheduler import SchedulerManager, TimeToSeedList, DailyPromptScheduler
+from .scheduler import SchedulerManager, TimeToSeedList, DailyPromptScheduler, ShutdownNode
 
 # 匯入web處理器 (如果存在的話)
 try:
@@ -62,12 +62,14 @@ atexit.register(cleanup)
 NODE_CLASS_MAPPINGS = {
     "TimeToSeedList": TimeToSeedList,
     "DailyPromptScheduler": DailyPromptScheduler,
+    "ShutdownNode": ShutdownNode,
 }
 
 # 節點顯示名稱映射
 NODE_DISPLAY_NAME_MAPPINGS = {
     "TimeToSeedList": "Time to Seed List",
     "DailyPromptScheduler": "Daily Prompt Scheduler",
+    "ShutdownNode": "Shutdown Computer",
 }
 
 # Web擴展映射
